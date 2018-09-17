@@ -3,9 +3,10 @@ var app = express()
 
 var fs = require('fs')
 var _ = require('lodash')
-var engines = require('consolidate')
 var path = require('path')
+var engines = require('consolidate')
 var bodyParser = require('body-parser')
+var helpers = require('./helpers')
 /*var users = []
 
 fs.readFile('users.json', {encoding: 'utf8'}, (err, data) => {
@@ -36,6 +37,7 @@ app.get('/', (req, res) => {
 
   var users = []
   fs.readdir('users', (err, files) => {
+    if (err) throw err
     files.forEach(file => {
 
       fs.readFile(path.join(__dirname, 'users', file), {encoding: 'utf8'}, (err, data) => {
@@ -77,25 +79,41 @@ app.get('*.json', (req, res) => {
 
 app.get('/data/:username', (req, res) => {
   var username = req.params.username
-  var user = getUser(username)
+  var user = helpers.getUser(username)
   res.json(user)
 })
 
 
-app.all('/:username', (req, res, next) => {
+var userRouter = require('./username')
+app.use('/:username', userRouter)
+/*
+app.route('/:username')
+.all((req, res, next) => {
   console.log(req.method, 'for', req.params.username)
   next()
 })
-
-
-app.get('/:username', verifyUser, (req, res) => {
+.get(helpers.verifyUser, (req, res) => {
   var username = req.params.username
   ////res.send(username)
   //res.render('user', {username: username})
 
-  var user = getUser(username)
+  var user = helpers.getUser(username)
   res.render('user', { user: user, address: user.location })
 })
+.put((req, res) => {
+  var username = req.params.username
+  var user = helpers.getUser(username)
+  user.location = req.body
+  helpers.saveUser(username, user)
+  res.end()
+})
+.delete((req, res) => {
+  var username = req.params.username
+  var fp = helpers.getUserFilePath(username)
+  fs.unlinkSync(fp) // delete the file
+  res.sendStatus(200)
+})
+*/
 
 
 // app.get('/:foo', (req, res) => {
@@ -106,55 +124,7 @@ app.get('/error/:username', (req, res) => {
 })
 
 
-app.put('/:username', (req, res) => {
-  var username = req.params.username
-  var user = getUser(username)
-  user.location = req.body
-  saveUser(username, user)
-  res.end()
-})
 
-
-app.delete('/:username', (req, res) => {
-  var username = req.params.username
-  var fp = getUserFilePath(username)
-  fs.unlinkSync(fp) // delete the file
-  res.sendStatus(200)
-})
-
-
-// Start: Functions
-function getUser (username) {
-  var user = JSON.parse(fs.readFileSync(getUserFilePath(username), {encoding: 'utf8'}))
-  user.name.full = _.startCase(user.name.first + ' ' + user.name.last)
-  _.keys(user.location).forEach(function (key) {
-    user.location[key] = _.startCase(user.location[key])
-  })
-  return user
-}
-
-function getUserFilePath (username) {
-  return path.join(__dirname, 'users', username) + '.json'
-}
-
-function saveUser (username, data) {
-  var fp = getUserFilePath(username)
-  fs.unlinkSync(fp) // delete the file
-  fs.writeFileSync(fp, JSON.stringify(data, null, 2), {encoding: 'utf8'})
-}
-
-function verifyUser(req, res, next) {
-  var fp = getUserFilePath(req.params.username)
-  fs.exists(fp, yes => {
-    if (yes) {
-      next()
-    } else {
-      //next('route')
-      res.redirect('/error/' + req.params.username)
-    }
-  })
-}
-// End: Functions
 
 var server = app.listen(3000, () => {
   console.log('Server running at http://localhost:' + server.address().port)
