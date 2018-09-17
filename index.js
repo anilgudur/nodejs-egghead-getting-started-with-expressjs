@@ -25,6 +25,7 @@ app.set('view engine', 'hbs')
 app.use('/profilepics', express.static('images'))
 app.use(bodyParser.urlencoded({ extended: true }))
 
+
 app.get('/', (req, res) => {
   // var buffer = ''
   // users.forEach(user => {
@@ -55,17 +56,39 @@ app.get('/', (req, res) => {
   })
 })
 
+
 app.get(/big.*/, (req, res, next) => {
-  console.log('BIG USER ACCESS')
+  //console.log('BIG USER ACCESS')
   next()
 })
+
 
 app.get(/.*dog.*/, (req, res, next) => {
-  console.log('DOGS GO WOOF')
+  //console.log('DOGS GO WOOF')
   next()
 })
 
-app.get('/:username', (req, res) => {
+
+app.get('*.json', (req, res) => {
+  console.log(req.path);
+  //res.download('./users/' + req.path, 'virus.exe')
+})
+
+
+app.get('/data/:username', (req, res) => {
+  var username = req.params.username
+  var user = getUser(username)
+  res.json(user)
+})
+
+
+app.all('/:username', (req, res, next) => {
+  console.log(req.method, 'for', req.params.username)
+  next()
+})
+
+
+app.get('/:username', verifyUser, (req, res) => {
   var username = req.params.username
   ////res.send(username)
   //res.render('user', {username: username})
@@ -73,6 +96,15 @@ app.get('/:username', (req, res) => {
   var user = getUser(username)
   res.render('user', { user: user, address: user.location })
 })
+
+
+// app.get('/:foo', (req, res) => {
+//   res.send('WHOOPS')
+// })
+app.get('/error/:username', (req, res) => {
+  res.status(404).send('No user named \'' + req.params.username + '\' found.')
+})
+
 
 app.put('/:username', (req, res) => {
   var username = req.params.username
@@ -82,12 +114,14 @@ app.put('/:username', (req, res) => {
   res.end()
 })
 
+
 app.delete('/:username', (req, res) => {
   var username = req.params.username
   var fp = getUserFilePath(username)
   fs.unlinkSync(fp) // delete the file
   res.sendStatus(200)
 })
+
 
 // Start: Functions
 function getUser (username) {
@@ -107,6 +141,18 @@ function saveUser (username, data) {
   var fp = getUserFilePath(username)
   fs.unlinkSync(fp) // delete the file
   fs.writeFileSync(fp, JSON.stringify(data, null, 2), {encoding: 'utf8'})
+}
+
+function verifyUser(req, res, next) {
+  var fp = getUserFilePath(req.params.username)
+  fs.exists(fp, yes => {
+    if (yes) {
+      next()
+    } else {
+      //next('route')
+      res.redirect('/error/' + req.params.username)
+    }
+  })
 }
 // End: Functions
 

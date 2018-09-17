@@ -3,12 +3,13 @@
   "name": {
     "title": "miss",
     "first": "toni",
-    "last": "obrien"
+    "last": "obrien",
+    "full": "Toni Obrien"
   },
   "location": {
-    "street": "3882 w gray st",
-    "city": "olathe",
-    "state": "delaware",
+    "street": "3882 W Gray St",
+    "city": "Olathe",
+    "state": "Delaware",
     "zip": "81577"
   },
   "email": "toni.obrien19@example.com",
