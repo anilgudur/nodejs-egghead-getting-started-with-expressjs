@@ -7,6 +7,7 @@ var path = require('path')
 var engines = require('consolidate')
 var bodyParser = require('body-parser')
 var helpers = require('./helpers')
+var JSONStream = require('JSONStream')
 /*var users = []
 
 fs.readFile('users.json', {encoding: 'utf8'}, (err, data) => {
@@ -79,8 +80,25 @@ app.get('*.json', (req, res) => {
 
 app.get('/data/:username', (req, res) => {
   var username = req.params.username
-  var user = helpers.getUser(username)
-  res.json(user)
+  // var user = helpers.getUser(username)
+  // res.json(user)
+
+  // #Use streams for non blocking io operation i.e. Asynchronously get input and simultaneously write
+  var readable = fs.createReadStream(helpers.getUserFilePath(username))
+  readable.pipe(res)
+})
+
+
+app.get('/users/by/:gender', (req, res) => {
+  var gender = req.params.gender
+  var readable = fs.createReadStream('users.json')
+
+  readable
+    .pipe(JSONStream.parse('*', (user) => {
+      if (user.gender === gender) return user.name
+    }))
+    .pipe(JSONStream.stringify('[\n  ', ',\n  ', '\n]\n'))
+    .pipe(res)
 })
 
 
